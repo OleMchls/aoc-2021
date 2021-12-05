@@ -31,19 +31,21 @@ parseNumbers :: String -> [Int]
 parseNumbers numbers = map read (words [if c == ',' then ' ' else c | c <- numbers])
 
 solve :: Input -> Int
-solve (numbers, boards) = calulateScore (firstWinner winningState)
-    where winningState = last $ takeWhileInclusive (not . completed) (yieldStates boards numbers)
-          yieldStates boards numbers = scanl applyNumber ([], boards) numbers
+solve (numbers, boards) = calulateScore (lastWinner finalState)
+    where winningState = last $ takeWhileInclusive (not . completed) yieldStates
+          finalState = foldl applyNumber ([], boards) numbers
+          yieldStates = scanl applyNumber ([], boards) numbers
           completed ([], _) = False
           completed _ = True
           firstWinner (winners, _) = head winners
+          lastWinner (winners, _) = last winners
 
 applyNumber :: State -> Int -> State
 applyNumber (wonBoards, boards) number = appendState number wonBoards (partition boardWon updatedBoards)
     where updatedBoards = map (checkOffNumber number) boards
 
 appendState :: Int -> [WonBoard] -> ([Board], [Board]) -> State
-appendState number wonBoards (newWon, rest) = (toWonBoard newWon ++ wonBoards, rest)
+appendState number wonBoards (newWon, rest) = (wonBoards ++ toWonBoard newWon, rest)
     where toWonBoard = map (\b -> (number, b))
 
 checkOffNumber :: Int -> Board -> Board
