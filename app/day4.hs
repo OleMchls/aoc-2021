@@ -1,6 +1,6 @@
 module Day4 where
 
-import Data.List ( transpose )
+import Data.List ( transpose, partition )
 
 data BingoNum = BingoNum {
                   checked :: Bool,
@@ -8,7 +8,7 @@ data BingoNum = BingoNum {
                 } deriving (Show)
 
 type Board = [[BingoNum]]
-type State = (Int, [Board])
+type State = (Int, ([Board], [Board]))
 type Input = ([Int], [Board])
 
 prepare :: String -> Input
@@ -32,12 +32,15 @@ parseNumbers numbers = map read (words [if c == ',' then ' ' else c | c <- numbe
 solve :: Input -> Int
 solve (numbers, boards) = calulateScore (firstWinner winningState)
     where winningState = last $ takeWhileInclusive (not . completed) (yieldStates boards numbers)
-          yieldStates boards numbers = scanl applyNumber (0, boards) numbers
-          completed (_, boards) = not (null (findWinners boards))
-          firstWinner (n, boards) = (n, head (findWinners boards))
+          yieldStates boards numbers = scanl applyNumber (0, ([], boards)) numbers
+          completed (_, ([], _)) = False
+          completed _ = True
+          firstWinner (n, (winners, _)) = (n, head winners)
 
 applyNumber :: State -> Int -> State
-applyNumber (_, boards) number = (number, map (checkOffNumber number) boards)
+applyNumber (_, (wonBoards, boards)) number = (number, appendState wonBoards (partition boardWon (map (checkOffNumber number) boards)))
+    where appendState wonBoards (newWon, rest) = (wonBoards ++ newWon, rest) 
+
 
 checkOffNumber :: Int -> Board -> Board
 checkOffNumber num board = [[bnum {checked = (num == value bnum) || checked bnum} | bnum <- rows] | rows <- board]
