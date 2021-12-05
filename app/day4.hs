@@ -8,7 +8,8 @@ data BingoNum = BingoNum {
                 } deriving (Show)
 
 type Board = [[BingoNum]]
-type State = (Int, ([Board], [Board]))
+type WonBoard = (Int, Board)
+type State = ([WonBoard], [Board])
 type Input = ([Int], [Board])
 
 prepare :: String -> Input
@@ -32,15 +33,18 @@ parseNumbers numbers = map read (words [if c == ',' then ' ' else c | c <- numbe
 solve :: Input -> Int
 solve (numbers, boards) = calulateScore (firstWinner winningState)
     where winningState = last $ takeWhileInclusive (not . completed) (yieldStates boards numbers)
-          yieldStates boards numbers = scanl applyNumber (0, ([], boards)) numbers
-          completed (_, ([], _)) = False
+          yieldStates boards numbers = scanl applyNumber ([], boards) numbers
+          completed ([], _) = False
           completed _ = True
-          firstWinner (n, (winners, _)) = (n, head winners)
+          firstWinner (winners, _) = head winners
 
 applyNumber :: State -> Int -> State
-applyNumber (_, (wonBoards, boards)) number = (number, appendState wonBoards (partition boardWon (map (checkOffNumber number) boards)))
-    where appendState wonBoards (newWon, rest) = (wonBoards ++ newWon, rest) 
+applyNumber (wonBoards, boards) number = appendState number wonBoards (partition boardWon updatedBoards)
+    where updatedBoards = map (checkOffNumber number) boards
 
+appendState :: Int -> [WonBoard] -> ([Board], [Board]) -> State
+appendState number wonBoards (newWon, rest) = (toWonBoard newWon ++ wonBoards, rest)
+    where toWonBoard = map (\b -> (number, b))
 
 checkOffNumber :: Int -> Board -> Board
 checkOffNumber num board = [[bnum {checked = (num == value bnum) || checked bnum} | bnum <- rows] | rows <- board]
@@ -51,7 +55,7 @@ findWinners = filter boardWon
 boardWon :: Board -> Bool
 boardWon board = any (all checked) (board ++ transpose board)
 
-calulateScore :: (Int, Board) -> Int
+calulateScore :: WonBoard -> Int
 calulateScore (n, board) = n * sum (map value (filter (not . checked) numbers))
     where numbers = concat board
 
