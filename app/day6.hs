@@ -1,26 +1,25 @@
 module Day6 where
 
-type Input = [Int]
+import qualified Data.Map as M
 
-type Generation = [Int]
+type Input = Generation
+
+type Age = Int
+type Count = Int
+
+type Generation = M.Map Age Count
 
 prepare :: String -> Input
-prepare x = map read (words [if c == ',' then ' ' else c | c <- x])
+prepare x = foldl insertIntoGen gen0 $ map read (words [if c == ',' then ' ' else c | c <- x])
+    where gen0 = M.empty
+          insertIntoGen gen i = M.insertWith (+) i 1 gen
 
 solve :: Input -> Int
-solve fish = length . last $ generations
-    where generations = scanl makeNextGen fish [1..80]
-          makeNextGen currentGen _ = nextGen currentGen
+solve fish = (sum . M.elems) $ generation 256
+    where generation x = foldl nextGen fish [1..x]
 
-nextGen :: Generation -> Generation
-nextGen lastGen = ([if x == 0 then 6 else x - 1 | x <- lastGen]) ++ determineBabyFish lastGen
-
-determineBabyFish :: Generation -> Generation
-determineBabyFish gen = [ 8 | x <- gen, x == 0]
-
--- >>> [ if x-1 == 0 then 6 else x-1 | x <- [3,4,3,1,2] ]
--- [2,3,2,6,1]
-
--- cabal update
--- cabal install ghci-dap haskell-debug-adapter
--- haskell-debug-adapter --version
+nextGen :: Generation -> Int -> Generation
+nextGen currentGen _ = M.unionWith (+) ageing born
+    where ageing = M.fromList [(x - 1, currentGenCount x currentGen) | x <- [1..8]]
+          born = M.fromList [(6, currentGenCount 0 currentGen), (8, currentGenCount 0 currentGen)]
+          currentGenCount = M.findWithDefault 0
