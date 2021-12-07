@@ -37,7 +37,8 @@ executable advent-of-code2021
         Day2,
         Day3,
         Day4,
-        Day6
+        Day6,
+        Day7
     hs-source-dirs:   app
     default-language: Haskell2010
 
