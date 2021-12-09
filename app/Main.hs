@@ -1,8 +1,8 @@
 module Main where
-import Day8 ( solve, prepare )
+import Day9 ( solve, prepare )
 
 main :: IO ()
 main = do
-        x <- readFile "day8.input.txt"
+        x <- readFile "day9.input.txt"
         putStr (show . solve . prepare $ x)
         
