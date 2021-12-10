@@ -1,33 +1,32 @@
 module Day10 where
 
+import Data.List
+
 prepare :: String -> [String]
 prepare = lines
 
 solve :: [String] -> Int
-solve = sum . map score . map parse
+solve = median . map scoreMissing . filter (not . null) . map (findClose [])
+
+scoreMissing :: [Char] -> Int
+scoreMissing = foldl (\acc c -> acc * 5 + score c) 0
 
 score :: Char -> Int
-score ')' = 3
-score ']' = 57
-score '}' = 1197
-score '>' = 25137
-score '_' = 0
+score ')' = 1
+score ']' = 2
+score '}' = 3
+score '>' = 4
 
-parse :: String -> Char
-parse [] = '_'
-parse ('(':xs) = findClose [')'] xs
-parse ('[':xs) = findClose [']'] xs
-parse ('{':xs) = findClose ['}'] xs
-parse ('<':xs) = findClose ['>'] xs
-parse (x:xs) = '_'
-
-findClose :: [Char] -> [Char] -> Char
-findClose x [] = '_'
-findClose [] x = parse x
+findClose :: [Char] -> [Char] -> [Char]
+findClose x [] = x
+findClose close ('(':xs) = findClose (')':close) xs
+findClose close ('[':xs) = findClose (']':close) xs
+findClose close ('{':xs) = findClose ('}':close) xs
+findClose close ('<':xs) = findClose ('>':close) xs
 findClose (close:cs) (x:xs)
     | x == close = findClose cs xs
-    | x == '('   = findClose (')':close:cs) xs
-    | x == '['   = findClose (']':close:cs) xs
-    | x == '{'   = findClose ('}':close:cs) xs
-    | x == '<'   = findClose ('>':close:cs) xs
-    | otherwise  = x
+findClose [] (x:xs) = findClose [] xs
+findClose x y = [] -- corrupted
+
+median :: Ord a => [a] -> a
+median xs = (sort xs) !! (length xs `div` 2)
