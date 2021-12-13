@@ -14,8 +14,10 @@ prepare = M.fromList . concat . buildMap . map (map digitToInt) . lines
     where buildMap s = [[ ((x,y), Octopus { value = v, flashed = False }) | (x, v) <- zip [0..] row ] | (y, row) <- zip [0..] s]
 
 solve :: OctopusMap -> Int
-solve ops = sum . map countFlashes . take 101 $ scanl (\m _ -> step m) ops [0 ..]
+solve ops = fst . last . takeWhileInclusive (not. allFlashing) $ yieldStates
     where countFlashes = length . M.elems . M.filter (\o -> value o == 0)
+          yieldStates = scanl (\(_, m) c -> (c, step m)) (0, ops) [1..]
+          allFlashing (_, m) = all ((==0) . value) . M.elems $ m
 
 step :: OctopusMap -> OctopusMap
 step = resetFlashed . flashOctopusses . tickAllOctopusses
@@ -50,3 +52,13 @@ resetFlashed :: OctopusMap -> OctopusMap
 resetFlashed = M.map resetOctopus
     where resetOctopus (Octopus _ True) = Octopus { value = 0, flashed = False }
           resetOctopus o = o
+
+-- There must be a better way to yield States until condition matches
+-- https://stackoverflow.com/questions/22472536/does-haskell-have-a-takeuntil-function
+takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
+takeWhileInclusive _ [] = []
+takeWhileInclusive p (x : xs) =
+  x :
+  if p x
+    then takeWhileInclusive p xs
+    else []
